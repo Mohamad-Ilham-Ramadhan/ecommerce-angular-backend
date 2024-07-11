@@ -1,0 +1,21 @@
+feature
+   - cart
+      - add to cart 
+      - remove to cart
+      - stock 
+   - user wallet
+      - cannot purchase when user wallet less than total price
+   - search
+      - I hope can use fuzy search
+   - create shop 
+   - create product in the shop 
+      - picture
+      - price 
+      - stock
+   - lazy load product 
+   - purchase
+      - add rating for each item purchased
+      - add testimony
+
+Admin
+   - bisa hapus product, user, seller, shop
