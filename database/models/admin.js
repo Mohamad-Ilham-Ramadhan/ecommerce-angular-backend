@@ -1,5 +1,5 @@
 import { DataTypes } from "sequelize";
-import { db } from "../db.js";
+import { db } from "../init.js";
 
 export const Admin = db.define(
    'Admin',
@@ -11,17 +11,22 @@ export const Admin = db.define(
       },
       username: {
          type: DataTypes.STRING,
+         allowNull: false,
       },
       password: {
          type: DataTypes.STRING,
+         allowNull: false,
       },
       name: {
-         type: DataTypes.STRING
+         type: DataTypes.STRING,
+         allowNull: false,
       },
       email: {
-         type: DataTypes.STRING
-      }
-   }
+         type: DataTypes.STRING,
+         allowNull: false,
+      },
+      image: {
+         type: DataTypes.STRING,
+      },
+   },
 );
-
-db.sync();

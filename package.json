@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "start": "nodemon app.js"
+    "start": "nodemon app.js",
+    "db:create": "node ./database/db.js"
   },
   "dependencies": {
     "body-parser": "^1.20.2",
