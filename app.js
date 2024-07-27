@@ -1,25 +1,37 @@
 import express from 'express';
 import bodyParser from 'body-parser';
-import { db } from './database/db.js';
-import { relations } from './database/relations.js';
+import cors from 'cors';
+import multer from 'multer';
 // route
 import userRoute from './route/user.js';
-
-db.sync()
+import sellerRoute from './route/seller.js';
 
 const app = express();
 const port = 3000;
+const upload = multer({dest: 'uploads/'})
 
+app.use(cors())
 // Middleware for parsing request body
-app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+// app.use(express.json());
 
 // route [start]
 app.use('/users', userRoute);
+app.use('/sellers', sellerRoute);
 // route [end]
 
 app.get('/', (req, res) => {
-  res.send('Hello World!')
+  res.json({
+    id: '1', 
+    name: 'ilham ganteng',
+    email: 'ilham@ganteng.com',
+  })
+});
+
+app.post('/', upload.single('image'), (req, res) => {
+  console.log('admin post', req.body);
+  res.send(req.body)
 });
 
 app.get('/admin/create', async (req, res) => {
