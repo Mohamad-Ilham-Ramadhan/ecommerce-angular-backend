@@ -25,7 +25,7 @@ router.post('/create', upload.single('image'), async (req, res) => {
          })
       } catch (error) {
          res.status(500).json({
-            message: 'Something broke!'
+            message: 'Something broken in the server!'
          })
       }
    }, 1000)
@@ -44,6 +44,28 @@ router.delete('/truncate', async (req, res) => {
          message: 'Delete failed!, problem in the server!'
       })
    }
+});
+
+router.delete('/:id', async (req, res) => {
+   console.log('request.params', req.params)
+   setTimeout(async () => {
+      try {
+         await Seller.destroy({
+            where: {
+               id: req.params.id
+            }
+         });
+         const sellers = await Seller.findAll()
+         res.json({
+            message: 'Delete seller, success!',
+            sellers
+         })
+      } catch (error) {
+         res.status(500).json({
+            message: 'Something broken in the server!'
+         })
+      }
+   }, 1000)
 });
 
 
