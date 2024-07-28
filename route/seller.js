@@ -12,22 +12,23 @@ router.get('/', async (req, res) => {
 
 router.post('/create', upload.single('image'), async (req, res) => {
    console.log('request', req.body)
-
-   try {
-      const newSeller = await Seller.create({
-         name: req.body.name,
-         email: req.body.email, 
-         password: req.body.password,
-      })
-      res.json({
-         message: 'Create new seller, success!',
-         seller: newSeller,
-      })
-   } catch (error) {
-      res.status(500).json({
-         message: 'Something broke!'
-      })
-   }
+   setTimeout(async () => {
+      try {
+         const newSeller = await Seller.create({
+            name: req.body.name,
+            email: req.body.email, 
+            password: req.body.password,
+         })
+         res.json({
+            message: 'Create new seller, success!',
+            seller: newSeller,
+         })
+      } catch (error) {
+         res.status(500).json({
+            message: 'Something broke!'
+         })
+      }
+   }, 1000)
 });
 
 router.delete('/truncate', async (req, res) => {
