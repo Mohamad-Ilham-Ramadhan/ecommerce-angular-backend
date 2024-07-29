@@ -6,8 +6,16 @@ const upload = multer({dest: 'uploads/'})
 const router = express.Router();
 
 router.get('/', async (req, res) => {
-   const sellers = await Seller.findAll();
-   res.json(sellers);
+   setTimeout(async () => {
+      try {
+         const sellers = await Seller.findAll();
+         res.json(sellers);
+      } catch (error) {
+         res.status(500).json({
+            message: 'Something broken`'
+         });
+      }
+   }, 1000)
 });
 
 router.post('/create', upload.single('image'), async (req, res) => {
