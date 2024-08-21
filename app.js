@@ -5,6 +5,7 @@ import multer from 'multer';
 // route
 import userRoute from './route/user.js';
 import sellerRoute from './route/seller.js';
+import adminRoute from './route/admin.js';
 
 const app = express();
 const port = 3000;
@@ -19,6 +20,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // route [start]
 app.use('/users', userRoute);
 app.use('/sellers', sellerRoute);
+app.use('/admin', adminRoute);
 // route [end]
 
 app.get('/', (req, res) => {

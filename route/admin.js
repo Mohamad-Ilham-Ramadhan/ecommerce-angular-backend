@@ -1,9 +1,9 @@
 import express from 'express';
 import multer from 'multer';
 import jwt from 'jsonwebtoken'
-import {Seller} from '../database/models/seller.js';
+import {Admin} from '../database/models/admin.js';
 
-const secret = 'ilham';
+const secret = 'admin';
 
 const upload = multer({dest: 'uploads/'})
 const router = express.Router();
@@ -25,14 +25,15 @@ router.post('/create', upload.single('image'), async (req, res) => {
    console.log('request', req.body)
    setTimeout(async () => {
       try {
-         const newSeller = await Seller.create({
+         const newAdmin = await Admin.create({
             name: req.body.name,
+            username: req.body.username,
             email: req.body.email, 
             password: req.body.password,
          })
          res.json({
-            message: 'Create new seller, success!',
-            seller: newSeller,
+            message: 'Create new admin, success!',
+            seller: newAdmin,
          })
       } catch (error) {
          res.status(500).json({
