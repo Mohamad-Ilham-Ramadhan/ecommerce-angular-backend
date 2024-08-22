@@ -3,19 +3,31 @@ import multer from 'multer';
 import jwt from 'jsonwebtoken'
 import {Seller} from '../database/models/seller.js';
 
-const secret = 'ilham';
+const secret = 'seller';
 
 const upload = multer({dest: 'uploads/'})
 const router = express.Router();
 
+// list of sellers
 router.get('/', async (req, res) => {
+   const adminToken = req.headers.authorization.split(' ')[1];
    setTimeout(async () => {
+      let token;
       try {
-         const sellers = await Seller.findAll();
-         res.json(sellers);
+         token = jwt.verify(adminToken, 'admin');
       } catch (error) {
-         res.status(500).json({
-            message: 'Something broken`'
+         return res.status(401).json({message: "You're unauthorized bitch!"});
+      }
+      try {
+         if (token.role === 'admin') {
+            const sellers = await Seller.findAll();
+            return res.json(sellers);
+         } else {
+            return res.status(401).json({message: "You're unauthorized bitch!"});
+         }
+      } catch (error) {
+         return res.status(500).json({
+            message: error,
          });
       }
    }, 1000)
@@ -23,6 +35,7 @@ router.get('/', async (req, res) => {
 
 router.post('/create', upload.single('image'), async (req, res) => {
    console.log('request', req.body)
+   console.log('req.file', req.file);
    setTimeout(async () => {
       try {
          const newSeller = await Seller.create({
@@ -33,6 +46,7 @@ router.post('/create', upload.single('image'), async (req, res) => {
          res.json({
             message: 'Create new seller, success!',
             seller: newSeller,
+            token: jwt.sign({id: newSeller.id, role: 'seller'}, secret)
          })
       } catch (error) {
          res.status(500).json({
@@ -60,6 +74,19 @@ router.post('/login', upload.single('image'), async (req, res) => {
          })
       }
    }, 1000);
+});
+
+router.get('/:id', async (req, res) => {
+   console.log('req.params', req.params);
+   setTimeout(async () => {
+      try {
+         const seller = await Seller.findByPk(req.params.id);
+         console.log('seller by id', seller)
+         return res.json(seller)
+      } catch (error) {
+         console.log(error)
+      }
+   }, 1000)
 });
 
 router.delete('/truncate', async (req, res) => {

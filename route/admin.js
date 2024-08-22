@@ -47,16 +47,17 @@ router.post('/login', upload.single('image'), async (req, res) => {
    setTimeout(async () => {
       console.log('login req.body', req.body)
       try {
-         const seller = await Seller.findOne({
+         const admin = await Admin.findOne({
             where: {
-               email: req.body.email,
+               username: req.body.username,
                password: req.body.password,
             }
          });
-         res.json({seller, token: jwt.sign({id: seller.id}, secret)})
+         const token = jwt.sign({id: admin.id, role: 'admin'}, secret)
+         res.json({data: admin, message: 'Login success', token})
       } catch (error) {
          res.status(500).json({
-            message: 'Something broken in the server! asdf',
+            message: 'Something broken in the server! Shut up!',
             error,
          })
       }
