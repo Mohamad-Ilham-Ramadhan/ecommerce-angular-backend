@@ -17,7 +17,11 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 // app.use(express.json());
 
+
+
 // route [start]
+app.use(express.static('images'))
+app.use(express.static('uploads'))
 app.use('/users', userRoute);
 app.use('/sellers', sellerRoute);
 app.use('/admin', adminRoute);
