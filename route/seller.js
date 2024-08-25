@@ -1,6 +1,7 @@
 import express from 'express';
 import multer from 'multer';
-import jwt from 'jsonwebtoken'
+import jwt from 'jsonwebtoken';
+import fs from 'fs';
 import {Seller} from '../database/models/seller.js';
 import { getAuthToken } from '../utils/getAuthToken.js';
 
@@ -70,7 +71,7 @@ router.post('/create', up.single('image'), async (req, res) => {
    }, 1500)
 });
 
-router.post('/login', upload.single('image'), async (req, res) => {
+router.post('/login', up.single('image'), async (req, res) => {
    setTimeout(async () => {
       console.log('login req.body', req.body)
       try {
@@ -101,7 +102,7 @@ router.post('/login', upload.single('image'), async (req, res) => {
 });
 
 router.get('/:id', async (req, res) => {
-   console.log('req', req.headers);
+   console.log('req.headers', req.headers);
    console.log('req.params', req.params);
    setTimeout(async () => {
       try {
@@ -119,23 +120,47 @@ router.get('/:id', async (req, res) => {
       }
    }, 1000)
 });
+router.patch('/edit/:id', up.single('image'), async (req, res) => {
+   let jwtError = false;
+   // token verify
+   jwt.verify(getAuthToken(req.headers.authorization), secret, function(error, decode) {
+      console.log('jwt.verify error', error)
+      console.log('jwt.verify decode', decode)
+      jwtError = error; 
+   });
 
-router.delete('/truncate', async (req, res) => {
+   if (jwtError) return res.status(401).json(jwtError);
+
    try {
-      await Seller.destroy({
-         truncate: true
-      });
-      res.json({
-         message: 'Delete all success!'
-      })
-   } catch (e) {
-      res.status(500).json({
-         message: 'Delete failed!, problem in the server!'
-      })
+      const seller = await Seller.findByPk(req.body.id);
+      
+      console.log('seller edit', seller);
+   
+      if (req.file) {
+         console.log('change profile picture');
+         console.log('fs', fs);
+         // delete existings photo
+         fs.unlink(`./uploads/${seller.image}`, (err) => {
+            if (err) throw err;
+         });
+         await Seller.update({image: req.file.filename}, {where: {id: req.body.id}})
+      }
+
+      console.log('req.body', req.body);
+
+      await Seller.update({
+         name: req.body.name,
+         email: req.body.email,
+      }, {where: {id: req.body.id}})
+   
+      return res.json({seller, message: 'testing'});
+   } catch (error) {
+      return res.status(500).json({message: 'Something wrong on the server!'});
    }
+
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/delete/:id', async (req, res) => {
    console.log('request.params', req.params)
    setTimeout(async () => {
       try {
@@ -156,6 +181,25 @@ router.delete('/:id', async (req, res) => {
       }
    }, 1000)
 });
+
+router.delete('/truncate', async (req, res) => {
+   try {
+      await Seller.destroy({
+            truncate: true,
+         });
+         // await Seller.destroy();
+         const sellers = await Seller.findAll();
+      res.json({
+         message: 'Delete all success!',
+         sellers
+      })
+   } catch (e) {
+      res.status(500).json({
+         message: 'Truncate failed!, problem in the server!'
+      })
+   }
+});
+
 
 
 
