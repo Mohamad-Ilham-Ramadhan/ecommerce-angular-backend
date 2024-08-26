@@ -7,12 +7,10 @@ import { getAuthToken } from '../utils/getAuthToken.js';
 
 const secret = 'seller';
 
-const upload = multer({dest: 'uploads/'});
+const upload = multer({dest: 'images/seller/'});
 const storage = multer.diskStorage({
-   destination: 'uploads/',
+   destination: 'images/seller/',
    filename: function(req, file, cb) {
-      console.log('diskStorage filename req', req)
-      console.log('diskStorage filename file', file)
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 10000);
       let filetype = file.originalname.slice(file.originalname.lastIndexOf('.'))
       cb(null, uniqueSuffix + filetype)
@@ -57,14 +55,26 @@ router.post('/create', up.single('image'), async (req, res) => {
             email: req.body.email, 
             password: req.body.password,
             image: req.file.filename
-         })
-         res.json({
-            message: 'Create new seller, success!',
-            seller: newSeller,
-            token: jwt.sign({id: newSeller.id, role: 'seller'}, secret, {expiresIn: 30})
-         })
+         });
+
+         let jwtError = null;
+         let token = null;
+         jwt.sign({id: newSeller.id, role: 'seller'}, secret, function(err, encoded) {
+            jwtError = err;
+            token = encoded;
+            if (jwtError) return res.status(401).json(jwtError);
+            
+            console.log('inside jwt.sign() callback just right before return res.json()');
+            return res.json({
+               message: 'Create new seller, success!',
+               seller: newSeller,
+               token,
+            })
+         });
+
+         console.log('outside jwt.sign() callback')
       } catch (error) {
-         res.status(500).json({
+         return res.status(500).json({
             message: 'Something broken in the server!'
          })
       }
@@ -102,13 +112,12 @@ router.post('/login', up.single('image'), async (req, res) => {
 });
 
 router.get('/:id', async (req, res) => {
-   console.log('req.headers', req.headers);
-   console.log('req.params', req.params);
+
    setTimeout(async () => {
       try {
          jwt.verify(getAuthToken(req.headers.authorization), secret);
       } catch (error) {
-         return res.status(401).json({error})
+         return res.status(401).json(error)
       }
       try {
          const seller = await Seller.findByPk(req.params.id);
@@ -124,8 +133,6 @@ router.patch('/edit/:id', up.single('image'), async (req, res) => {
    let jwtError = false;
    // token verify
    jwt.verify(getAuthToken(req.headers.authorization), secret, function(error, decode) {
-      console.log('jwt.verify error', error)
-      console.log('jwt.verify decode', decode)
       jwtError = error; 
    });
 
@@ -134,25 +141,24 @@ router.patch('/edit/:id', up.single('image'), async (req, res) => {
    try {
       const seller = await Seller.findByPk(req.body.id);
       
-      console.log('seller edit', seller);
+      // console.log('seller edit', seller);
    
       if (req.file) {
-         console.log('change profile picture');
-         console.log('fs', fs);
          // delete existings photo
-         fs.unlink(`./uploads/${seller.image}`, (err) => {
-            if (err) throw err;
-         });
+         if (fs.existsSync(`./images/seller/${seller.image}`)) {
+            fs.promises.unlink(`./images/seller/${seller.image}`).then(val => {
+               console.log('fs.promises.unlink ', val);
+            })
+         }
          await Seller.update({image: req.file.filename}, {where: {id: req.body.id}})
       }
-
-      console.log('req.body', req.body);
-
+       
       await Seller.update({
          name: req.body.name,
          email: req.body.email,
       }, {where: {id: req.body.id}})
-   
+      
+      console.log('outside fs.unlink')
       return res.json({seller, message: 'testing'});
    } catch (error) {
       return res.status(500).json({message: 'Something wrong on the server!'});
