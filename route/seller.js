@@ -6,6 +6,11 @@ import {Seller} from '../database/models/seller.js';
 import { Product } from '../database/models/product.js';
 import { getAuthToken } from '../utils/getAuthToken.js';
 
+// relations
+Seller.hasMany(Product);
+Product.belongsTo(Seller);
+
+
 const secret = 'seller';
 
 const upload = multer({dest: 'images/seller/'});
@@ -116,16 +121,22 @@ router.post('/login', sellerUpload.single('image'), async (req, res) => {
       }
    }, 1000);
 });
-router.get('/:id', async (req, res) => {
+router.get('/find-one', async (req, res) => {
 
    setTimeout(async () => {
+      let token = undefined;
+      let jwtError = undefined;
+      jwt.verify(getAuthToken(req.headers.authorization), secret, (error, decoded) => {
+         jwtError = error;
+         token = decoded;
+      });
+
+      if (jwtError) return res.status(401).json(jwtError);
+
+      console.log('token', token)
+      
       try {
-         jwt.verify(getAuthToken(req.headers.authorization), secret);
-      } catch (error) {
-         return res.status(401).json(error)
-      }
-      try {
-         const seller = await Seller.findByPk(req.params.id);
+         const seller = await Seller.findByPk(token.id);
          seller.password = null;
          return res.json(seller)
       } catch (error) {
@@ -210,20 +221,50 @@ router.delete('/truncate', async (req, res) => {
 });
 
 // related with Product
-router.post('/create-product/:sellerId', productUpload.single('image'), async (req, res) => {
-
+router.get('/get-all-products', async (req, res) => {
+   let jwtError;
+   let token;
    // verify token
-   jwt.verify(getAuthToken(req.headers.authorization), secret, function(error) {
-      if (error) return res.status(401).json(error)
-
-         
-         console.log('req.params', req.params)
-         console.log('req.body', req.body)
-         console.log('req.file', req.file);
-         
-         return res.json({message: 'testing'})
-
+   jwt.verify(getAuthToken(req.headers.authorization), secret, function(error, decoded) {
+      jwtError = error; token = decoded;
    });
+
+   if (jwtError) return res.status(401).json(jwtError);
+   
+   try {
+      const products = await Seller.findByPk(token.id).getProducts();
+      return res.json(products);
+   } catch (error) {
+      return res.json(error);
+   }
+});
+router.post('/create-product', productUpload.single('image'), async (req, res) => {
+   let jwtError;
+   let token;
+   // verify token
+   jwt.verify(getAuthToken(req.headers.authorization), secret, function(error, decoded) {
+      jwtError = error; token = decoded;
+   });
+
+   if (jwtError) return res.status(401).json(jwtError);
+
+   try {
+
+      console.log('req.file', req.file);
+      
+      const seller = await Seller.findByPk(token.id);
+      await seller.createProduct({
+         name: req.body.name,
+         description: req.body.description,
+         stock: req.body.stock,
+         price: req.body.price,
+         image: req.file.filename,
+      });
+      console.log('seller.getProducts()', await seller.countProducts())
+      return res.json({message: 'testing'})
+   } catch (error) {
+      return res.json(error)
+   }
 
    // relationship save 
 });
