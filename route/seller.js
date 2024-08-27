@@ -145,17 +145,19 @@ router.get('/find-one', async (req, res) => {
       }
    }, 1000)
 });
-router.patch('/edit/:id', sellerUpload.single('image'), async (req, res) => {
+router.patch('/edit', sellerUpload.single('image'), async (req, res) => {
    let jwtError = false;
+   let token = undefined;
    // token verify
-   jwt.verify(getAuthToken(req.headers.authorization), secret, function(error, decode) {
+   jwt.verify(getAuthToken(req.headers.authorization), secret, function(error, decoded) {
       jwtError = error; 
+      token = decoded;
    });
 
    if (jwtError) return res.status(401).json(jwtError);
 
    try {
-      const seller = await Seller.findByPk(req.body.id);
+      const seller = await Seller.findByPk(token.id);
       
       // console.log('seller edit', seller);
    
@@ -166,13 +168,13 @@ router.patch('/edit/:id', sellerUpload.single('image'), async (req, res) => {
                console.log('fs.promises.unlink ', val);
             })
          }
-         await Seller.update({image: req.file.filename}, {where: {id: req.body.id}})
+         await Seller.update({image: req.file.filename}, {where: {id: token.id}})
       }
        
       await Seller.update({
          name: req.body.name,
          email: req.body.email,
-      }, {where: {id: req.body.id}})
+      }, {where: {id: token.id}})
       
       console.log('outside fs.unlink')
       return res.json({seller, message: 'testing'});
