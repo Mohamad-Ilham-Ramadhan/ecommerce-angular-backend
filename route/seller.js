@@ -3,20 +3,28 @@ import multer from 'multer';
 import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import {Seller} from '../database/models/seller.js';
+import { Product } from '../database/models/product.js';
 import { getAuthToken } from '../utils/getAuthToken.js';
 
 const secret = 'seller';
 
 const upload = multer({dest: 'images/seller/'});
-const storage = multer.diskStorage({
+const sellerUpload = multer({storage: multer.diskStorage({
    destination: 'images/seller/',
    filename: function(req, file, cb) {
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 10000);
       let filetype = file.originalname.slice(file.originalname.lastIndexOf('.'))
       cb(null, uniqueSuffix + filetype)
    }
-});
-const up = multer({storage})
+})});
+const productUpload = multer({storage: multer.diskStorage({
+   destination: 'images/product/',
+   filename: function(req, file, cb) {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 10000);
+      let filetype = file.originalname.slice(file.originalname.lastIndexOf('.'))
+      cb(null, uniqueSuffix + filetype)
+   }
+})})
 const router = express.Router();
 
 // list of sellers
@@ -43,8 +51,7 @@ router.get('/', async (req, res) => {
       }
    }, 1000)
 });
-
-router.post('/create', up.single('image'), async (req, res) => {
+router.post('/create', sellerUpload.single('image'), async (req, res) => {
    console.log('request', req.body)
    console.log('req.file', req.file);
 
@@ -80,8 +87,7 @@ router.post('/create', up.single('image'), async (req, res) => {
       }
    }, 1500)
 });
-
-router.post('/login', up.single('image'), async (req, res) => {
+router.post('/login', sellerUpload.single('image'), async (req, res) => {
    setTimeout(async () => {
       console.log('login req.body', req.body)
       try {
@@ -110,7 +116,6 @@ router.post('/login', up.single('image'), async (req, res) => {
       }
    }, 1000);
 });
-
 router.get('/:id', async (req, res) => {
 
    setTimeout(async () => {
@@ -129,7 +134,7 @@ router.get('/:id', async (req, res) => {
       }
    }, 1000)
 });
-router.patch('/edit/:id', up.single('image'), async (req, res) => {
+router.patch('/edit/:id', sellerUpload.single('image'), async (req, res) => {
    let jwtError = false;
    // token verify
    jwt.verify(getAuthToken(req.headers.authorization), secret, function(error, decode) {
@@ -165,7 +170,6 @@ router.patch('/edit/:id', up.single('image'), async (req, res) => {
    }
 
 });
-
 router.delete('/delete/:id', async (req, res) => {
    console.log('request.params', req.params)
    setTimeout(async () => {
@@ -187,7 +191,6 @@ router.delete('/delete/:id', async (req, res) => {
       }
    }, 1000)
 });
-
 router.delete('/truncate', async (req, res) => {
    try {
       await Seller.destroy({
@@ -206,7 +209,24 @@ router.delete('/truncate', async (req, res) => {
    }
 });
 
+// related with Product
+router.post('/create-product/:sellerId', productUpload.single('image'), async (req, res) => {
 
+   // verify token
+   jwt.verify(getAuthToken(req.headers.authorization), secret, function(error) {
+      if (error) return res.status(401).json(error)
+
+         
+         console.log('req.params', req.params)
+         console.log('req.body', req.body)
+         console.log('req.file', req.file);
+         
+         return res.json({message: 'testing'})
+
+   });
+
+   // relationship save 
+});
 
 
 export default router;
