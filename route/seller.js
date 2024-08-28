@@ -49,6 +49,15 @@ function verifyTokenMiddleware(secret) {
    }
 }
 
+function delayMiddleware(miliseconds) {
+   return (req, res, next) => {
+      setTimeout(() => {
+         next();
+         console.log('delay executed');
+      }, miliseconds);
+   }
+}
+
 // list of sellers
 router.get('/',verifyTokenMiddleware('admin'), async (req, res) => {
    // get all seller
@@ -134,24 +143,16 @@ router.post('/login', sellerUpload.single('image'), async (req, res) => {
       }
    }, 1000);
 });
-router.get('/find-one', async (req, res) => {
+router.get('/find-one', verifyTokenMiddleware(secret), async (req, res) => {
 
    setTimeout(async () => {
-      let token = undefined;
-      let jwtError = undefined;
-      jwt.verify(getAuthToken(req.headers.authorization), secret, (error, decoded) => {
-         jwtError = error;
-         token = decoded;
-      });
+      if (req.jwtError) return res.status(401).json(req.jwtError);
 
-      if (jwtError) return res.status(401).json(jwtError);
-
-      console.log('token', token)
-      
       try {
-         const seller = await Seller.findByPk(token.id);
+         const seller = await Seller.findByPk(req.token.id);
          seller.password = null;
-         return res.json(seller)
+         const products = await seller.getProducts();
+         return res.json({seller, products})
       } catch (error) {
          console.log('error', error.name, error.message);
          return res.status(500).json({message: 'Something wrong on the server.'})
@@ -255,7 +256,7 @@ router.get('/get-all-products', async (req, res) => {
       return res.json(error);
    }
 });
-router.post('/create-product', productUpload.single('image'), async (req, res) => {
+router.post('/create-product', delayMiddleware(1000), productUpload.single('image'), async (req, res) => {
    let jwtError = null;
    let token = null;
    console.log('bearer token', getAuthToken(req.headers.authorization))
