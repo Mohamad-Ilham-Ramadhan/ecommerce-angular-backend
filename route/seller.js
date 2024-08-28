@@ -29,21 +29,34 @@ const productUpload = multer({storage: multer.diskStorage({
       let filetype = file.originalname.slice(file.originalname.lastIndexOf('.'))
       cb(null, uniqueSuffix + filetype)
    }
-})})
+})});
+
 const router = express.Router();
 
+function verifyTokenMiddleware(secret) {
+   return (req, res, next) => {
+      let jwtError = null;
+      let token = null;
+      console.log('bearer token', getAuthToken(req.headers.authorization))
+      // verify token
+      jwt.verify(getAuthToken(req.headers.authorization), secret, function(error, decoded) {
+         jwtError = error; token = decoded;
+      });
+   
+      req.token = token;
+      req.jwtError = jwtError;
+      next();
+   }
+}
+
 // list of sellers
-router.get('/', async (req, res) => {
-   const adminToken = getAuthToken(req.headers.authorization);
+router.get('/',verifyTokenMiddleware('admin'), async (req, res) => {
+   // get all seller
    setTimeout(async () => {
-      let token;
+      console.log('req.token', req.token);
+      if (req.jwtError)  return res.status(401).json({message: "You're unauthorized bitch!"});
       try {
-         token = jwt.verify(adminToken, 'admin');
-      } catch (error) {
-         return res.status(401).json({message: "You're unauthorized bitch!"});
-      }
-      try {
-         if (token.role === 'admin') {
+         if (req.token.role === 'admin') {
             const sellers = await Seller.findAll();
             return res.json(sellers);
          } else {
@@ -243,13 +256,16 @@ router.get('/get-all-products', async (req, res) => {
    }
 });
 router.post('/create-product', productUpload.single('image'), async (req, res) => {
-   let jwtError;
-   let token;
+   let jwtError = null;
+   let token = null;
+   console.log('bearer token', getAuthToken(req.headers.authorization))
    // verify token
    jwt.verify(getAuthToken(req.headers.authorization), secret, function(error, decoded) {
       jwtError = error; token = decoded;
    });
-
+   
+   console.log('jwtError', jwtError)
+   console.log('decoded token', token)
    if (jwtError) {
       if (fs.existsSync(`./images/product/${req.file.filename}`)) {
          fs.promises.unlink(`./images/product/${req.file.filename}`).then(val => {
@@ -278,6 +294,18 @@ router.post('/create-product', productUpload.single('image'), async (req, res) =
    }
 
    // relationship save 
+});
+router.get('/products', verifyTokenMiddleware(secret), async (req, res) => {
+   // verify token 
+   if (req.jwtError) return res.status(401).json(req.jwtError);
+
+   try {
+
+      const products = await (await Seller.findByPk(req.token.id)).getProducts();
+      return res.json(products);
+   } catch (error) {
+      return res.status(500).json(error)
+   }
 });
 
 
