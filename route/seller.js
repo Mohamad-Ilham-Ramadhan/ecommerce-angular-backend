@@ -317,8 +317,10 @@ router.delete('/delete-product',delayMiddleware(1000), verifyTokenMiddleware(sec
       if (await seller.hasProduct(product)) {
          console.log('seller has product!')
          await product.destroy()
+         const products = await seller.getProducts()
          return res.json({
-            message: 'Delete seller, success!',
+            message: 'Delete product success!',
+            products,
          })
       }
       return res.status(500).json({
