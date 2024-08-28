@@ -308,6 +308,27 @@ router.get('/products', verifyTokenMiddleware(secret), async (req, res) => {
       return res.status(500).json(error)
    }
 });
+router.delete('/delete-product',delayMiddleware(1000), verifyTokenMiddleware(secret), async (req, res) => {
+   if (req.jwtError) return res.status(401).json(req.jwtError);
+
+   try {
+      const seller = await Seller.findByPk(req.token.id);
+      const product = await Product.findByPk(req.body.productId);
+      if (await seller.hasProduct(product)) {
+         console.log('seller has product!')
+         await product.destroy()
+         return res.json({
+            message: 'Delete seller, success!',
+         })
+      }
+      return res.status(500).json({
+         message: "Seller doesn't has the product"
+      })
+   } catch (error) {
+      console.log(error)
+      return res.status(500).json(error)
+   }
+});
 
 
 export default router;
