@@ -151,10 +151,12 @@ router.patch('/edit', sellerUpload.single('image'), async (req, res) => {
    // token verify
    jwt.verify(getAuthToken(req.headers.authorization), secret, function(error, decoded) {
       jwtError = error; 
-      token = decoded;
+      token = decoded; 
    });
 
-   if (jwtError) return res.status(401).json(jwtError);
+   if (jwtError) {
+      return res.status(401).json(jwtError)
+   };
 
    try {
       const seller = await Seller.findByPk(token.id);
@@ -248,7 +250,14 @@ router.post('/create-product', productUpload.single('image'), async (req, res) =
       jwtError = error; token = decoded;
    });
 
-   if (jwtError) return res.status(401).json(jwtError);
+   if (jwtError) {
+      if (fs.existsSync(`./images/product/${req.file.filename}`)) {
+         fs.promises.unlink(`./images/product/${req.file.filename}`).then(val => {
+            console.log('fs.promises.unlink ', val);
+         })
+      }
+      return res.status(401).json(jwtError)
+   };
 
    try {
 
