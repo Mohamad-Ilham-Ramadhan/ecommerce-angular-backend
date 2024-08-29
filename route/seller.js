@@ -289,12 +289,51 @@ router.post('/create-product', delayMiddleware(1000), productUpload.single('imag
          image: req.file.filename,
       });
       console.log('seller.getProducts()', await seller.countProducts())
-      return res.json({message: 'testing'})
+      return res.json({message: 'Create product success!'})
    } catch (error) {
       return res.json(error)
    }
 
    // relationship save 
+});
+router.patch('/edit-product', delayMiddleware(1000), verifyTokenMiddleware(secret), productUpload.single('image'), async (req, res) => {
+ 
+   if (req.jwtError) {
+      if (req.file && fs.existsSync(`./images/product/${req.file.filename}`)) {
+         fs.promises.unlink(`./images/product/${req.file.filename}`).then(val => {
+            console.log('fs.promises.unlink ', val);
+         })
+      }
+      return res.status(401).json(req.jwtError)
+   };
+
+   try {
+
+      console.log('req.file', req.file);
+      
+      const product = await Product.findByPk(req.body.id);
+
+      if (req.file) {
+         // delete existings photo
+         if (fs.existsSync(`./images/product/${product.image}`)) {
+            fs.promises.unlink(`./images/product/${product.image}`).then(val => {
+               console.log('fs.promises.unlink ', val);
+            })
+         }
+         // await Product.update({image: req.file.filename}, {where: {id: token.id}})
+         await product.update({image: req.file.filename});
+      }
+
+      await product.update({
+         name: req.body.name,
+         description: req.body.description,
+         stock: req.body.stock,
+         price: req.body.price,
+      });
+      return res.json({message: 'Edit product success!'})
+   } catch (error) {
+      return res.json(error)
+   }
 });
 router.get('/products', verifyTokenMiddleware(secret), async (req, res) => {
    // verify token 
