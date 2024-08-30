@@ -5,6 +5,8 @@ import fs from 'fs';
 import {Seller} from '../database/models/seller.js';
 import { Product } from '../database/models/product.js';
 import { getAuthToken } from '../utils/getAuthToken.js';
+import { delayMiddleware } from '../middlewares/delayMiddleware.js';
+import { verifyTokenMiddleware } from '../middlewares/verifyTokenMiddleware.js';
 
 // relations
 Seller.hasMany(Product);
@@ -33,30 +35,6 @@ const productUpload = multer({storage: multer.diskStorage({
 
 const router = express.Router();
 
-function verifyTokenMiddleware(secret) {
-   return (req, res, next) => {
-      let jwtError = null;
-      let token = null;
-      console.log('bearer token', getAuthToken(req.headers.authorization))
-      // verify token
-      jwt.verify(getAuthToken(req.headers.authorization), secret, function(error, decoded) {
-         jwtError = error; token = decoded;
-      });
-   
-      req.token = token;
-      req.jwtError = jwtError;
-      next();
-   }
-}
-
-function delayMiddleware(miliseconds) {
-   return (req, res, next) => {
-      setTimeout(() => {
-         next();
-         console.log('delay executed');
-      }, miliseconds);
-   }
-}
 
 // list of sellers
 router.get('/',verifyTokenMiddleware('admin'), async (req, res) => {
@@ -143,21 +121,19 @@ router.post('/login', sellerUpload.single('image'), async (req, res) => {
       }
    }, 1000);
 });
-router.get('/find-one', verifyTokenMiddleware(secret), async (req, res) => {
+router.get('/find-one', delayMiddleware(1), verifyTokenMiddleware(secret), async (req, res) => {
 
-   setTimeout(async () => {
-      if (req.jwtError) return res.status(401).json(req.jwtError);
+   if (req.jwtError) return res.status(401).json(req.jwtError);
 
-      try {
-         const seller = await Seller.findByPk(req.token.id);
-         seller.password = null;
-         const products = await seller.getProducts();
-         return res.json({seller, products})
-      } catch (error) {
-         console.log('error', error.name, error.message);
-         return res.status(500).json({message: 'Something wrong on the server.'})
-      }
-   }, 1000)
+   try {
+      const seller = await Seller.findByPk(req.token.id);
+      seller.password = null;
+      const products = await seller.getProducts();
+      return res.json({seller, products})
+   } catch (error) {
+      console.log('error', error.name, error.message);
+      return res.status(500).json({message: 'Something wrong on the server.'})
+   }
 });
 router.patch('/edit', sellerUpload.single('image'), async (req, res) => {
    let jwtError = false;

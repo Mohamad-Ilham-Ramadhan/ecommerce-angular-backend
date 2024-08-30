@@ -2,6 +2,8 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import multer from 'multer';
+import { User } from './database/models/user.js';
+
 // route
 import userRoute from './route/user.js';
 import sellerRoute from './route/seller.js';

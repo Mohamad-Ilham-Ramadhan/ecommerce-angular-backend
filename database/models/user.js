@@ -9,6 +9,10 @@ export const User = db.define(
          autoIncrement: true,
          primaryKey: true
       },
+      name: {
+         type: DataTypes.STRING,
+         allowNull: false,
+      },
       username: {
          type: DataTypes.STRING,
          allowNull: false,
@@ -28,5 +32,4 @@ export const User = db.define(
 );
 
 // User hasMany Purchase, Purchase hasMany to User
-
-// db.sync();
+console.log('on page User models')
