@@ -4,6 +4,7 @@ import { delayMiddleware } from '../middlewares/delayMiddleware.js';
 import { verifyTokenMiddleware } from '../middlewares/verifyTokenMiddleware.js';
 import multer from 'multer';
 import fs from 'fs';
+import jwt from 'jsonwebtoken';
 
 const router = express.Router();
 const secret = 'user';
@@ -21,8 +22,18 @@ router.get('/', async (req, res) => {
    res.json(users)
 });
 
-router.post('/create', delayMiddleware(1000), userUpload.single('image'), async (req, res) => {
+router.get('/find-one', verifyTokenMiddleware(secret), async (req, res) => {
+   if (req.jwtError) return res.status(401).json(req.jwtError)
 
+   try {
+      const user = await User.findByPk(req.token.id);
+      return res.json(user)
+   } catch (error) {
+      console.log(error)
+      return res.status(500).json(error)
+   }
+});
+router.post('/create', delayMiddleware(1000), userUpload.single('image'), async (req, res) => {
    try {
       const newUser = await User.create({
          name: req.body.name,
@@ -31,7 +42,8 @@ router.post('/create', delayMiddleware(1000), userUpload.single('image'), async 
          password: req.body.password,
          image: req.file.filename
       });
-      return res.json(newUser);
+      const token = jwt.sign({id: newUser.id, role: 'user'}, secret);
+      return res.json({user: newUser, token});
    } catch (error) {
       console.log('error', error);
       // hapus image yang udah di upload
@@ -41,10 +53,26 @@ router.post('/create', delayMiddleware(1000), userUpload.single('image'), async 
             })
          }
       }
-      return res.json(error)
+      return res.status(500).json(error)
    }
 });
+router.post('/login', delayMiddleware(1000), userUpload.single('image'), async (req, res) => {
 
+   console.log('req.body', req.body);
+   
+   try {
+      const user = await User.findOne({
+         where: {
+            email: req.body.email,
+            password: req.body.password,
+         }
+      })
+      return res.json(user)
+   } catch (error) {
+      console.log(error)
+      return res.status(500).json(500);
+   }
+});
 router.delete('/delete', delayMiddleware(1000), verifyTokenMiddleware('admin'), async (req, res) => {
    if (req.jwtError) return res.status(401).json(req.jwtError);
 
@@ -58,7 +86,6 @@ router.delete('/delete', delayMiddleware(1000), verifyTokenMiddleware('admin'), 
       return res.json(error)   
    }
 });
-
 router.delete('/truncate', delayMiddleware(1000), verifyTokenMiddleware('admin'), async (req, res) => {
    if (req.jwtError) return res.status(401).json(req.jwtError);
 
