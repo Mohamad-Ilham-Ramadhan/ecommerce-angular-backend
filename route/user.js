@@ -16,8 +16,9 @@ const userUpload = multer({storage: multer.diskStorage({
    }
 })});
 
-router.get('/', (req, res) => {
-   res.send('user page')
+router.get('/', async (req, res) => {
+   const users = await User.findAll();
+   res.json(users)
 });
 
 router.post('/create', delayMiddleware(1000), userUpload.single('image'), async (req, res) => {
@@ -44,6 +45,30 @@ router.post('/create', delayMiddleware(1000), userUpload.single('image'), async 
    }
 });
 
+router.delete('/delete', delayMiddleware(1000), verifyTokenMiddleware('admin'), async (req, res) => {
+   if (req.jwtError) return res.status(401).json(req.jwtError);
+
+   try {
+      await User.destroy({
+         where: { id: req.body.id}
+      });
+      const users = await User.findAll()
+      return res.json(users)
+   } catch (error) {
+      return res.json(error)   
+   }
+});
+
+router.delete('/truncate', delayMiddleware(1000), verifyTokenMiddleware('admin'), async (req, res) => {
+   if (req.jwtError) return res.status(401).json(req.jwtError);
+
+   try {
+      await User.truncate()
+      return res.json(true)
+   } catch (error) {
+      return res.json(error)   
+   }
+});
 
 
 export default router;
