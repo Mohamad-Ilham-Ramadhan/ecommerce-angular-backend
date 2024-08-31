@@ -2,12 +2,11 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import multer from 'multer';
-import { User } from './database/models/user.js';
-
 // route
 import userRoute from './route/user.js';
 import sellerRoute from './route/seller.js';
 import adminRoute from './route/admin.js';
+import productRouter from './route/product.js';
 
 const app = express();
 const port = 3000;
@@ -19,14 +18,13 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 // app.use(express.json());
 
-
-
 // route [start]
 app.use(express.static('images'))
 app.use(express.static('uploads'))
 app.use('/users', userRoute);
 app.use('/sellers', sellerRoute);
 app.use('/admin', adminRoute);
+app.use('/products', productRouter);
 // route [end]
 
 app.get('/', (req, res) => {

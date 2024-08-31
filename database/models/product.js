@@ -1,6 +1,5 @@
 import { DataTypes } from "sequelize";
 import { db } from "../init.js";
-
 export const Product = db.define(
    'Product',
    {
@@ -32,6 +31,5 @@ export const Product = db.define(
 );
 // Shop has many Product, Product belongsto Shop
 // Seller has many Shop, Shop belongsto Seller
-
 // Product has many ProductReview, ProductReview belongsto Product
 // db.sync();

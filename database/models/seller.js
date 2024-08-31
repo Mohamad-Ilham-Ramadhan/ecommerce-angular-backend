@@ -1,5 +1,6 @@
 import { DataTypes } from "sequelize";
 import { db } from "../init.js";
+import { Product } from "./product.js";
 
 export const Seller = db.define(
    'Seller', 
@@ -28,5 +29,6 @@ export const Seller = db.define(
 );
 
 // Seller hasMany Product, Product hasOne to Seller
+console.log('seller model')
 
 // db.sync();
