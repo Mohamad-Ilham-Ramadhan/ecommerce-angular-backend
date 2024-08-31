@@ -58,16 +58,15 @@ router.post('/create', delayMiddleware(1000), userUpload.single('image'), async 
 });
 router.post('/login', delayMiddleware(1000), userUpload.single('image'), async (req, res) => {
 
-   console.log('req.body', req.body);
-   
    try {
       const user = await User.findOne({
          where: {
             email: req.body.email,
             password: req.body.password,
          }
-      })
-      return res.json(user)
+      });
+      const token = jwt.sign({id: user.id, role: 'user'}, secret);
+      return res.json({user, token})
    } catch (error) {
       console.log(error)
       return res.status(500).json(500);
