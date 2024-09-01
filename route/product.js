@@ -38,7 +38,7 @@ router.get('/:id', delayMiddleware(1000), async (req, res) => {
    console.log('req.id', req.id)
    console.log('req.params', req.params)
    try {
-      const product = await Product.findByPk(req.params.id)
+      const product = await Product.findByPk(req.params.id, {include: Seller})
       return res.json(product);
    } catch (error) {
       console.log('error', error)
@@ -116,6 +116,15 @@ router.delete('/truncate', delayMiddleware(1000), verifyTokenMiddleware('admin')
       return res.json(true)
    } catch (error) {
       return res.json(error)   
+   }
+});
+router.post('/buy-now', delayMiddleware(1000), verifyTokenMiddleware('user'), async (req, res) => {
+   if (req.jwtError) return res.status(401).json(req.jwtError)
+
+   try {
+      
+   } catch (error) {
+      
    }
 });
 
