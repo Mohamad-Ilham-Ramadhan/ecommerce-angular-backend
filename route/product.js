@@ -11,6 +11,7 @@ import { Seller } from '../database/models/seller.js';
 import { Purchase } from '../database/models/purchase.js';
 import { PurchaseDetail } from '../database/models/purchaseDetail.js';
 import { User } from '../database/models/user.js';
+import { ProductReviewNotif } from '../database/models/productReviewNotif.js';
 
 
 const router = express.Router();
@@ -154,6 +155,10 @@ router.post('/buy-now', delayMiddleware(1000), verifyTokenMiddleware('user'), pr
                productImage: req.body.product.image,
                productPrice: req.body.product.price,
                productQuantity: req.body.quantity,
+            }, { transaction: t});
+            const notif = await ProductReviewNotif.create({
+               UserId: user.id,
+               ProductId: req.body.product.id,
             }, { transaction: t});
             await t.commit()
             return res.json('success')
