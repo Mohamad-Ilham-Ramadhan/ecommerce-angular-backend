@@ -56,6 +56,7 @@ router.post('/login', upload.single('image'), async (req, res) => {
          const token = jwt.sign({id: admin.id, role: 'admin'}, secret)
          res.json({data: admin, message: 'Login success', token})
       } catch (error) {
+         console.log(error)
          res.status(500).json({
             message: 'Something broken in the server! Shut up!',
             error,

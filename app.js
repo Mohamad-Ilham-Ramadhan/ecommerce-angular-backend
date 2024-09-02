@@ -8,6 +8,7 @@ import sellerRoute from './route/seller.js';
 import adminRoute from './route/admin.js';
 import productRouter from './route/product.js';
 
+
 const app = express();
 const port = 3000;
 const upload = multer({dest: 'uploads/'})
@@ -39,12 +40,12 @@ app.post('/', upload.single('image'), (req, res) => {
   console.log('admin post', req.body);
   res.send(req.body)
 });
-
+import { Admin } from './database/models/admin.js';
 app.get('/admin/create', async (req, res) => {
   const yancuk = Admin.build({
     username: 'admin',
-    password: 'asdf1234',
-    email: 'ilhamyancuk@gmail.com',
+    password: 'admin',
+    email: 'admin@admin.com',
     name: 'Ilham Yancuk',
   })
   await yancuk.save();

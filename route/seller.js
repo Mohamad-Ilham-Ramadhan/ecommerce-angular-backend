@@ -66,7 +66,7 @@ router.post('/create', sellerUpload.single('image'), async (req, res) => {
             name: req.body.name,
             email: req.body.email, 
             password: req.body.password,
-            image: req.file.filename
+            image: req.file?.filename
          });
 
          let jwtError = null;
@@ -86,6 +86,7 @@ router.post('/create', sellerUpload.single('image'), async (req, res) => {
 
          console.log('outside jwt.sign() callback')
       } catch (error) {
+         console.log(error)
          return res.status(500).json({
             message: 'Something broken in the server!'
          })

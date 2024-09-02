@@ -1,5 +1,6 @@
 import { DataTypes } from "sequelize";
 import { db } from "../init.js";
+import { User } from "./user.js";
 
 export const Purchase = db.define(
    'Purchase', 
@@ -15,5 +16,7 @@ export const Purchase = db.define(
       },
    },
 );
+User.hasMany(Purchase)
+Purchase.belongsTo(User)
 console.log('Purchase Model')
 // User hasMany Purchase, Purchase hasMany to User

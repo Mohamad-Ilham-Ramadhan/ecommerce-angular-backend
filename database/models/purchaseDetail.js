@@ -1,5 +1,6 @@
 import { DataTypes } from "sequelize";
 import { db } from "../init.js";
+import { Purchase } from "./purchase.js";
 
 export const PurchaseDetail = db.define(
    'PurchaseDetail', 
@@ -13,6 +14,10 @@ export const PurchaseDetail = db.define(
          type: DataTypes.INTEGER,
          allowNull: false,
       }, 
+      sellerName: {
+         type: DataTypes.STRING,
+         allowNull: false,
+      },
       productId: {
          type: DataTypes.INTEGER,
          allowNull: false,
@@ -35,6 +40,7 @@ export const PurchaseDetail = db.define(
       },
    },
 );
-
+Purchase.hasMany(PurchaseDetail);
+PurchaseDetail.belongsTo(Purchase);
 // User hasMany Purchase, Purchase hasMany to User
 console.log('PurchaseDetail Model')
