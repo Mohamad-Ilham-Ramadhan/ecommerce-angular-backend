@@ -2,6 +2,8 @@ import express from 'express';
 import multer from 'multer';
 import fs from 'fs';
 import jwt from 'jsonwebtoken';
+import { Sequelize } from 'sequelize';
+import { db } from '../database/init.js';
 import { delayMiddleware } from '../middlewares/delayMiddleware.js';
 import { verifyTokenMiddleware } from '../middlewares/verifyTokenMiddleware.js';
 import { Product } from '../database/models/product.js';
@@ -9,6 +11,7 @@ import { Seller } from '../database/models/seller.js';
 import { Purchase } from '../database/models/purchase.js';
 import { PurchaseDetail } from '../database/models/purchaseDetail.js';
 import { User } from '../database/models/user.js';
+
 
 const router = express.Router();
 const secret = 'product';
@@ -127,45 +130,41 @@ router.post('/buy-now', delayMiddleware(1000), verifyTokenMiddleware('user'), pr
    if (req.jwtError) return res.status(401).json(req.jwtError)
    
    req.body.product = JSON.parse(req.body.product)
-   console.log('/buy-now req.body', req.body)
-   console.log('/buy-now req.body.product.stock', req.body.product.stock)
-   console.log('/buy-now req.body.product.id', req.body.product.id)
-   console.log('/buy-now req.token', req.token);
-   console.log('/buy-now req.body.totalPrice', req.body.totalPrice);
-   // update stock in the product
-   // insert purchase
-   
    try {
-      const product = await Product.update({
-         stock: req.body.product.stock - req.body.quantity,
-      }, {
-         where: {
-            id: req.body.product.id
+      await db.transaction(async t => {
+         try {
+            
+            const product = await Product.update({
+               stock: req.body.product.stock - req.body.quantity,
+            }, {
+               transaction: t,
+               where: {
+                  id: req.body.product.id
+               },
+            });
+            const user = await User.findByPk(req.token.id, {transaction: t});
+            const purchase = await user.createPurchase({
+               totalPrice: req.body.totalPrice,
+            }, { transaction: t});   
+            const purchaseDetail = await purchase.createPurchaseDetail({
+               sellerId: req.body.product.Seller.id,
+               sellerName: req.body.product.Seller.name,
+               productId: req.body.product.id,
+               productName: req.body.product.name,
+               productImage: req.body.product.image,
+               productPrice: req.body.product.price,
+               productQuantity: req.body.quantity,
+            }, { transaction: t});
+            await t.commit()
+            return res.json('success')
+         } catch (error) {
+            console.log('error inside transaction', error)
+            await t.rollback();
+            return res.status(500).json(error)      
          }
-      });
-      const user = await User.findByPk(req.token.id);
-      console.log('user.id', user.id)
-      const purchase = await user.createPurchase({
-         totalPrice: req.body.totalPrice,
-         // UserId: user.id
-      });
-      // await user.setPurchase(purchase)
-      console.log('purchase.id', purchase.id)
-      const purchaseDetail = await purchase.createPurchaseDetail({
-         sellerId: req.body.product.Seller.id,
-         sellerName: req.body.product.Seller.name,
-         productId: req.body.product.id,
-         productName: req.body.product.name,
-         productImage: req.body.product.image,
-         productPrice: req.body.product.price,
-         productQuantity: req.body.quantity,
-         // PurchaseId: purchase.id
-      });
-
-      return res.json('testing')
+      })
    } catch (error) {
-      console.log('error', error)
-      return res.status(500).json(error)
+      console.log('error outside db.transaction()', error)
    }
 });
 

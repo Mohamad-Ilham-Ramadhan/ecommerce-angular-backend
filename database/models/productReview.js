@@ -1,6 +1,7 @@
 import { DataTypes } from "sequelize";
 import { db } from "../init.js";
-
+import { Product } from "./product.js";
+import { User } from "./user.js";
 export const ProductReview = db.define(
    'ProductReview',
    {
@@ -24,7 +25,10 @@ export const ProductReview = db.define(
       },
    }
 );
-
+Product.hasMany(ProductReview)
+ProductReview.belongsTo(Product);
+User.hasMany(ProductReview);
+ProductReview.belongsTo(User);
 // ProductReview belongs to User, User hasMany ProductReview
 
 // db.sync();
