@@ -38,7 +38,7 @@ router.get('/', async (req, res) => {
       return res.status(500).json(error)
    }
 });
-router.get('/:id', delayMiddleware(1000), async (req, res) => {
+router.get('/single/:id', delayMiddleware(1000), async (req, res) => {
    console.log('req.body', req.body);
    console.log('req.id', req.id)
    console.log('req.params', req.params)
@@ -170,6 +170,22 @@ router.post('/buy-now', delayMiddleware(1000), verifyTokenMiddleware('user'), pr
       })
    } catch (error) {
       console.log('error outside db.transaction()', error)
+   }
+});
+router.get('/review-notif', verifyTokenMiddleware('user'), async (req, res) => {
+   if (req.jwtError) return res.status(401).json(req.jwtError);
+   console.log('req.token.id', req.token.id);
+   try {
+      const notif = await ProductReviewNotif.findAll({
+         where: {
+            UserId: req.token.id
+         }
+      })
+      console.log('notif', notif)
+      return res.json(notif);
+   } catch (error) {
+      console.log('error', error);
+      return res.status(500).json(error)
    }
 });
 
