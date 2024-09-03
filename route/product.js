@@ -12,7 +12,7 @@ import { Purchase } from '../database/models/purchase.js';
 import { PurchaseDetail } from '../database/models/purchaseDetail.js';
 import { User } from '../database/models/user.js';
 import { ProductReviewNotif } from '../database/models/productReviewNotif.js';
-
+import { ProductReview } from '../database/models/productReview.js';
 
 const router = express.Router();
 const secret = 'product';
@@ -161,7 +161,7 @@ router.post('/buy-now', delayMiddleware(1000), verifyTokenMiddleware('user'), pr
                ProductId: req.body.product.id,
             }, { transaction: t});
             await t.commit()
-            return res.json('success')
+            return res.json(notif)
          } catch (error) {
             console.log('error inside transaction', error)
             await t.rollback();
@@ -189,7 +189,38 @@ router.get('/review-notif', verifyTokenMiddleware('user'), async (req, res) => {
    }
 });
 
-router.post('/review', delayMiddleware(1000), verifyTokenMiddleware('user'), async (req, res) => {
+router.post('/review', delayMiddleware(1000), verifyTokenMiddleware('user'), productUpload.single('image'), async (req, res) => {
+
+
+   console.log('req.body', req.body);
+   
+   // return res.json('ok')
+   try {
+      await db.transaction( async t => {
+         try {
+            // delete notif
+            const notif = await ProductReviewNotif.findByPk(req.body.notifId, { transaction: t})
+            await notif.destroy({transaction: t})
+
+            const review = await ProductReview.create({
+               review: req.body.review,
+               UserId: req.body.userId,
+               ProductId: req.body.productId,
+               rate: req.body.rate,
+            }, {transaction: t})
+            console.log('review', review);
+            t.commit()
+            return res.json(review);
+            // create review
+         } catch (error) {
+            console.log('error', error)
+            t.rollback();
+            return res.status(500).json(error)
+         }
+      });
+   } catch (error) {
+      
+   }
 });
 
 
