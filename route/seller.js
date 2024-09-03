@@ -37,11 +37,9 @@ const router = express.Router();
 
 
 // list of sellers
-router.get('/',verifyTokenMiddleware('admin'), async (req, res) => {
+router.get('/', verifyTokenMiddleware('admin'), async (req, res) => {
    // get all seller
    setTimeout(async () => {
-      console.log('req.token', req.token);
-      if (req.jwtError)  return res.status(401).json({message: "You're unauthorized bitch!"});
       try {
          if (req.token.role === 'admin') {
             const sellers = await Seller.findAll();
@@ -123,8 +121,6 @@ router.post('/login', sellerUpload.single('image'), async (req, res) => {
    }, 1000);
 });
 router.get('/find-one', delayMiddleware(1), verifyTokenMiddleware(secret), async (req, res) => {
-
-   if (req.jwtError) return res.status(401).json(req.jwtError);
 
    try {
       const seller = await Seller.findByPk(req.token.id);
@@ -216,16 +212,7 @@ router.delete('/truncate', async (req, res) => {
 });
 
 // related with Product
-router.get('/get-all-products', async (req, res) => {
-   let jwtError;
-   let token;
-   // verify token
-   jwt.verify(getAuthToken(req.headers.authorization), secret, function(error, decoded) {
-      jwtError = error; token = decoded;
-   });
-
-   if (jwtError) return res.status(401).json(jwtError);
-   
+router.get('/get-all-products', verifyTokenMiddleware(secret), async (req, res) => {
    try {
       const products = await Seller.findByPk(token.id).getProducts();
       return res.json(products);
@@ -233,24 +220,14 @@ router.get('/get-all-products', async (req, res) => {
       return res.json(error);
    }
 });
-router.post('/create-product', delayMiddleware(1000), productUpload.single('image'), async (req, res) => {
-   let jwtError = null;
-   let token = null;
-   console.log('bearer token', getAuthToken(req.headers.authorization))
-   // verify token
-   jwt.verify(getAuthToken(req.headers.authorization), secret, function(error, decoded) {
-      jwtError = error; token = decoded;
-   });
-   
-   console.log('jwtError', jwtError)
-   console.log('decoded token', token)
-   if (jwtError) {
+router.post('/create-product', delayMiddleware(1000), verifyTokenMiddleware(secret, true), productUpload.single('image'), async (req, res) => {
+   if (req.jwtError) {
       if (fs.existsSync(`./images/product/${req.file.filename}`)) {
          fs.promises.unlink(`./images/product/${req.file.filename}`).then(val => {
             console.log('fs.promises.unlink ', val);
          })
       }
-      return res.status(401).json(jwtError)
+      return res.status(401).json(req.jwtError)
    };
 
    try {
@@ -273,7 +250,7 @@ router.post('/create-product', delayMiddleware(1000), productUpload.single('imag
 
    // relationship save 
 });
-router.patch('/edit-product', delayMiddleware(1000), verifyTokenMiddleware(secret), productUpload.single('image'), async (req, res) => {
+router.patch('/edit-product', delayMiddleware(1000), verifyTokenMiddleware(secret, true), productUpload.single('image'), async (req, res) => {
  
    if (req.jwtError) {
       if (req.file && fs.existsSync(`./images/product/${req.file.filename}`)) {
@@ -313,9 +290,6 @@ router.patch('/edit-product', delayMiddleware(1000), verifyTokenMiddleware(secre
    }
 });
 router.get('/products', verifyTokenMiddleware(secret), async (req, res) => {
-   // verify token 
-   if (req.jwtError) return res.status(401).json(req.jwtError);
-
    try {
 
       const products = await (await Seller.findByPk(req.token.id)).getProducts();
@@ -325,8 +299,6 @@ router.get('/products', verifyTokenMiddleware(secret), async (req, res) => {
    }
 });
 router.delete('/delete-product',delayMiddleware(1000), verifyTokenMiddleware(secret), async (req, res) => {
-   if (req.jwtError) return res.status(401).json(req.jwtError);
-
    try {
       const seller = await Seller.findByPk(req.token.id);
       const product = await Product.findByPk(req.body.productId);

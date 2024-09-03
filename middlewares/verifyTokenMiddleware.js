@@ -1,7 +1,13 @@
 import { getAuthToken } from "../utils/getAuthToken.js";
 import jwt from 'jsonwebtoken';
 
-export function verifyTokenMiddleware(secret) {
+/**
+ * 
+ * @param {} secret jwt secret key
+ * @param {} pass  pass jwtError to the next middleware or return http error(jwt) response in this middleware
+ * @returns 
+ */
+export function verifyTokenMiddleware(secret, pass = false) {
    return (req, res, next) => {
       let jwtError = null;
       let token = null;
@@ -24,6 +30,7 @@ export function verifyTokenMiddleware(secret) {
          // const 
          req.token = token;
          req.jwtError = jwtError;
+         if (!pass && req.jwtError) return res.status(401).json(req.jwtError)
          next();
       } else {
          // verify token
@@ -33,6 +40,7 @@ export function verifyTokenMiddleware(secret) {
       
          req.token = token;
          req.jwtError = jwtError;
+         if (!pass && req.jwtError) return res.status(401).json(req.jwtError)
          next();
       }
    }

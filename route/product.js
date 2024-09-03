@@ -66,9 +66,9 @@ router.get('/find-one', verifyTokenMiddleware(secret), async (req, res) => {
       return res.status(500).json(error)
    }
 });
-router.post('/create', delayMiddleware(1000), productUpload.single('image'), async (req, res) => {
+router.post('/create', delayMiddleware(1000), verifyTokenMiddleware('seller'), productUpload.single('image'), async (req, res) => {
    try {
-      const newproduct = await product.create({
+      const newproduct = await Product.create({
          name: req.body.name,
          productname: req.body.productname,
          email: req.body.email,
@@ -187,6 +187,9 @@ router.get('/review-notif', verifyTokenMiddleware('user'), async (req, res) => {
       console.log('error', error);
       return res.status(500).json(error)
    }
+});
+
+router.post('/review', delayMiddleware(1000), verifyTokenMiddleware('user'), async (req, res) => {
 });
 
 
