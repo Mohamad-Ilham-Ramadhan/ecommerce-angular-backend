@@ -1,10 +1,12 @@
 import express from 'express';
-import { User } from '../database/models/user.js';
-import { delayMiddleware } from '../middlewares/delayMiddleware.js';
-import { verifyTokenMiddleware } from '../middlewares/verifyTokenMiddleware.js';
 import multer from 'multer';
 import fs from 'fs';
 import jwt from 'jsonwebtoken';
+import { db } from '../database/init.js';
+import { delayMiddleware } from '../middlewares/delayMiddleware.js';
+import { verifyTokenMiddleware } from '../middlewares/verifyTokenMiddleware.js';
+import { User } from '../database/models/user.js';
+import { ProductReviewNotif } from '../database/models/productReviewNotif.js';
 
 const router = express.Router();
 const secret = 'user';
@@ -57,20 +59,29 @@ router.post('/create', delayMiddleware(1000), userUpload.single('image'), async 
    }
 });
 router.post('/login', delayMiddleware(1000), userUpload.single('image'), async (req, res) => {
-
-   try {
-      const user = await User.findOne({
-         where: {
-            email: req.body.email,
-            password: req.body.password,
+   await db.transaction( async t => {
+         try {
+            const user = await User.findOne({
+               where: {
+                  email: req.body.email,
+                  password: req.body.password,
+               },
+               include: ProductReviewNotif,
+               transaction: t,
+            });
+            // const notifs = await ProductReviewNotif.findAll({
+            //    where: { UserId: user.id},
+            //    transaction: t,
+            // })
+            const token = jwt.sign({id: user.id, role: 'user'}, secret);
+            // await t.commit();
+            return res.json({user, token})
+         } catch (error) {
+            console.log('/users/login error', error);
+            await t.rollback();
+            return res.status(500).json(500);
          }
-      });
-      const token = jwt.sign({id: user.id, role: 'user'}, secret);
-      return res.json({user, token})
-   } catch (error) {
-      console.log(error)
-      return res.status(500).json(500);
-   }
+      })
 });
 router.delete('/delete', delayMiddleware(1000), verifyTokenMiddleware('admin'), async (req, res) => {
    if (req.jwtError) return res.status(401).json(req.jwtError);

@@ -233,8 +233,9 @@ router.post('/create-product', delayMiddleware(1000), verifyTokenMiddleware(secr
    try {
 
       console.log('req.file', req.file);
+      console.log('req.file', req.file);
       
-      const seller = await Seller.findByPk(token.id);
+      const seller = await Seller.findByPk(req.token.id);
       await seller.createProduct({
          name: req.body.name,
          description: req.body.description,

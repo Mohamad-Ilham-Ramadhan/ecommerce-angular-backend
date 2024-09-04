@@ -148,7 +148,7 @@ router.delete('/truncate', delayMiddleware(1000), verifyTokenMiddleware('admin')
 router.post('/buy-now', delayMiddleware(1000), verifyTokenMiddleware('user'), productUpload.single('image'), async (req, res) => {
    if (req.jwtError) return res.status(401).json(req.jwtError)
    
-   req.body.product = JSON.parse(req.body.product)
+   req.body.product = JSON.parse(req.body.product);
    try {
       await db.transaction(async t => {
          try {
@@ -178,6 +178,7 @@ router.post('/buy-now', delayMiddleware(1000), verifyTokenMiddleware('user'), pr
                UserId: user.id,
                ProductId: req.body.product.id,
             }, { transaction: t});
+            // const notifs = await ProductReviewNotif.find
             await t.commit()
             return res.json(notif)
          } catch (error) {
