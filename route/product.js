@@ -14,6 +14,11 @@ import { User } from '../database/models/user.js';
 import { ProductReviewNotif } from '../database/models/productReviewNotif.js';
 import { ProductReview } from '../database/models/productReview.js';
 
+Product.hasMany(ProductReviewNotif);
+ProductReviewNotif.belongsTo(Product);
+User.hasMany(ProductReviewNotif);
+ProductReviewNotif.belongsTo(User);
+
 const router = express.Router();
 const secret = 'product';
 const productUpload = multer({storage: multer.diskStorage({
@@ -53,6 +58,19 @@ router.get('/single/:id', delayMiddleware(1000), async (req, res) => {
    } catch (error) {
       console.log('error', error)
       return res.json(error)
+   }
+});
+router.get('/review/:id', delayMiddleware(1000), async(req, res) => {
+   try {
+      const reviews = await ProductReview.findAll({
+         where: {
+            ProductId: req.params.id
+         },
+         include: User
+      })
+      return res.json(reviews);
+   } catch (error) {
+      return res.status(500).json(error);
    }
 });
 router.get('/find-one', verifyTokenMiddleware(secret), async (req, res) => {
@@ -188,7 +206,6 @@ router.get('/review-notif', verifyTokenMiddleware('user'), async (req, res) => {
       return res.status(500).json(error)
    }
 });
-
 router.post('/review', delayMiddleware(1000), verifyTokenMiddleware('user'), productUpload.single('image'), async (req, res) => {
 
 
@@ -208,9 +225,14 @@ router.post('/review', delayMiddleware(1000), verifyTokenMiddleware('user'), pro
                ProductId: req.body.productId,
                rate: req.body.rate,
             }, {transaction: t})
-            console.log('review', review);
+            const notifs = await ProductReviewNotif.findAll({
+               where: {
+                  UserId: req.token.id
+               },
+               transaction: t
+            });
             t.commit()
-            return res.json(review);
+            return res.json({review, notifs});
             // create review
          } catch (error) {
             console.log('error', error)
@@ -222,6 +244,21 @@ router.post('/review', delayMiddleware(1000), verifyTokenMiddleware('user'), pro
       
    }
 });
+router.get('/review-notif-list', delayMiddleware(1), verifyTokenMiddleware('user'), async (req, res) => {
+   console.log('this is sparta!')
+   try {
+      const list = await ProductReviewNotif.findAll({
+         where: {
+            UserId: req.token.id
+         },
+         include: [{model: Product, include: {model: Seller, attributes: {exclude: 'password'}}}, User],
+      });
+      return res.json(list);
+   } catch (error) {
+      console.log('/review-notif-list error', error)
+      return res.status(500).json(error)
+   }
+})
 
 
 export default router;
