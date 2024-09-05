@@ -35,11 +35,14 @@ export function verifyTokenMiddleware(secret, pass = false) {
       } else {
          // verify token
          jwt.verify(getAuthToken(req.headers.authorization), secret, function(error, decoded) {
+            console.log('decoded', decoded)
+            console.log('error', error)
             jwtError = error; token = decoded;
          });
       
          req.token = token;
-         req.jwtError = jwtError;
+         req.jwtError = jwtError;;
+         console.log('verifyTokenMiddleware req.token', req.token);
          if (!pass && req.jwtError) return res.status(401).json(req.jwtError)
          next();
       }

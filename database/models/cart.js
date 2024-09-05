@@ -29,7 +29,7 @@ export const CartProducts = db.define('CartProducts', {
        key: 'id',
      },
    },
-   ProductCount: {
+   ProductQuantity: {
       type: DataTypes.INTEGER,
       allowNull: false
    }
