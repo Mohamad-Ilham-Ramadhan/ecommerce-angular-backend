@@ -10,6 +10,8 @@ import { User } from '../database/models/user.js';
 import { ProductReviewNotif } from '../database/models/productReviewNotif.js';
 import { Cart } from '../database/models/cart.js';
 import { CartProducts } from '../database/models/cart.js';
+import { Purchase } from '../database/models/purchase.js';
+import { Seller } from '../database/models/seller.js';
 
 const router = express.Router();
 const secret = 'user';
@@ -154,11 +156,103 @@ router.post('/cart/add', delayMiddleware(300), verifyTokenMiddleware(secret, tru
 router.get('/cart', delayMiddleware(300), verifyTokenMiddleware('user'), async (req, res) => {
    try {
       const products = await (await (await User.findByPk(req.token.id)).getCart()).getProducts()
-      return res.json(products)
+      return res.json(products);
    } catch (error) {
       console.log('error', error)
       return res.status(500).json(error);
    }
+});
+router.post('/cart/buy', delayMiddleware(300), verifyTokenMiddleware('user'), async (req, res) => {
+
+   const t = await db.transaction();
+   try {
+      const cart = await (await User.findByPk(req.token.id)).getCart();
+      const cartProducts = await cart.getProducts();
+      const purchase = await Purchase.create({
+         totalPrice: 0,
+         UserId: req.token.id,
+      }, {transaction: t});
+      let totalPrice = 0;
+      for (const cp of cartProducts) {
+         totalPrice = totalPrice + (cp.CartProducts.ProductQuantity * cp.price)
+         const seller = await cp.getSeller();
+         await purchase.createPurchaseDetail({
+            sellerId: seller.id,
+            sellerName: seller.name,
+            productId: cp.id,
+            productName: cp.name,
+            productImage: cp.image,
+            productPrice: cp.price,
+            productQuantity: cp.CartProducts.ProductQuantity,
+         }, {transaction: t});
+         // update Product stock
+         await cp.update({
+            stock: cp.stock - cp.CartProducts.ProductQuantity,
+         }, {transaction: t});
+      }
+      await purchase.update({
+         totalPrice,
+      }, {transaction: t});
+      // delete cart
+      await CartProducts.destroy({
+         where: {
+            CartId: cart.id
+         },
+         transaction: t
+      });
+
+      await t.commit();
+      return res.status(200).json('success')
+   } catch (error) {
+      await t.rollback();
+      console.log('/users/cart/buy error', error)
+   }
+   // await db.transaction( async t => {
+   //    try {
+   //       const cart = await (await User.findByPk(req.token.id)).getCart();
+   //       const cartProducts = await cart.getProducts();
+   //       const purchase = await Purchase.create({
+   //          // totalPrice: cp.CartProducts.ProductQuantity * cp.price,
+   //          totalPrice: 0,
+   //          UserId: req.token.id,
+   //       }, {transaction: t});
+   //       let totalPrice = 0;
+   //       cartProducts.forEach( async cp => {
+   //          // console.log('cp', cp.CartProducts.ProductQuantity)
+   //          totalPrice = totalPrice + (cp.CartProducts.ProductQuantity * cp.price)
+   //          // console.log('purchase', purchase);
+   //          console.log('cp', cp)
+   //          const seller = await cp.getSeller();
+   //          await purchase.createPurchaseDetail({
+   //             sellerId: seller.id,
+   //             sellerName: seller.name,
+   //             productId: cp.id,
+   //             productName: cp.name,
+   //             productImage: cp.image,
+   //             productPrice: cp.price,
+   //             productQuantity: cp.CartProducts.ProductQuantity,
+   //          }, {transaction: t});
+   //          // update Product stock
+   //          await cp.update({
+   //             stock: cp.stock - cp.CartProducts.ProductQuantity,
+   //          }, {transaction: t});
+   //       });
+   //       await purchase.update({
+   //          totalPrice,
+   //       }, {transaction: t});
+   //       // delete cart
+   //       await CartProducts.destroy({
+   //          where: {
+   //             CartId: cart.id
+   //          },
+   //          transaction: t
+   //       });
+
+   //       return res.status(200).json('success')
+   //    } catch (error) {
+   //       console.log('/users/cart/buy error', error)
+   //    }
+   // });
 });
 
 
