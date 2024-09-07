@@ -173,6 +173,7 @@ router.post('/cart/buy', delayMiddleware(300), verifyTokenMiddleware('user'), as
          UserId: req.token.id,
       }, {transaction: t});
       let totalPrice = 0;
+      let notifs = [];
       for (const cp of cartProducts) {
          totalPrice = totalPrice + (cp.CartProducts.ProductQuantity * cp.price)
          const seller = await cp.getSeller();
@@ -189,6 +190,11 @@ router.post('/cart/buy', delayMiddleware(300), verifyTokenMiddleware('user'), as
          await cp.update({
             stock: cp.stock - cp.CartProducts.ProductQuantity,
          }, {transaction: t});
+
+         notifs.push(await ProductReviewNotif.create({
+            UserId: req.token.id,
+            ProductId: cp.id,
+         }, { transaction: t}))
       }
       await purchase.update({
          totalPrice,
@@ -200,9 +206,9 @@ router.post('/cart/buy', delayMiddleware(300), verifyTokenMiddleware('user'), as
          },
          transaction: t
       });
-
+      
       await t.commit();
-      return res.status(200).json('success')
+      return res.status(200).json(notifs)
    } catch (error) {
       await t.rollback();
       console.log('/users/cart/buy error', error)

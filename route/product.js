@@ -43,14 +43,10 @@ router.get('/', async (req, res) => {
       return res.status(500).json(error)
    }
 });
-router.get('/single/:id', delayMiddleware(1000), async (req, res) => {
-   console.log('req.body', req.body);
-   console.log('req.id', req.id)
-   console.log('req.params', req.params)
+router.get('/single/:id', delayMiddleware(200), async (req, res) => {
    try {
       const product = await Product.findByPk(req.params.id, {include: Seller});
       product.Seller.password = null;
-      console.log('product', product)
       if (!product) {
          return res.status(204).json(null)
       }
