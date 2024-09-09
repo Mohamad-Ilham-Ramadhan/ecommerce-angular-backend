@@ -54,42 +54,47 @@ router.get('/', verifyTokenMiddleware('admin'), async (req, res) => {
       }
    }, 1000)
 });
-router.post('/create', sellerUpload.single('image'), async (req, res) => {
+router.post('/create', delayMiddleware(300), sellerUpload.single('image'), async (req, res) => {
    console.log('request', req.body)
    console.log('req.file', req.file);
 
-   setTimeout(async () => {
-      try {
-         const newSeller = await Seller.create({
-            name: req.body.name,
-            email: req.body.email, 
-            password: req.body.password,
-            image: req.file?.filename
-         });
+   try {
+      const newSeller = await Seller.create({
+         name: req.body.name,
+         email: req.body.email, 
+         password: req.body.password,
+         image: req.file?.filename
+      });
 
-         let jwtError = null;
-         let token = null;
-         jwt.sign({id: newSeller.id, role: 'seller'}, secret, function(err, encoded) {
-            jwtError = err;
-            token = encoded;
-            if (jwtError) return res.status(401).json(jwtError);
-            
-            console.log('inside jwt.sign() callback just right before return res.json()');
-            return res.json({
-               message: 'Create new seller, success!',
-               seller: newSeller,
-               token,
-            })
-         });
+      throw Error('masasih kisi motoh');
+      
+      let jwtError = null;
+      let token = null;
+      jwt.sign({id: newSeller.id, role: 'seller'}, secret, function(err, encoded) {
+         jwtError = err;
+         token = encoded;
+         if (jwtError) return res.status(401).json(jwtError);
+         
+         console.log('inside jwt.sign() callback just right before return res.json()');
+         return res.json({
+            message: 'Create new seller, success!',
+            seller: newSeller,
+            token,
+         })
+      });
 
-         console.log('outside jwt.sign() callback')
-      } catch (error) {
-         console.log(error)
-         return res.status(500).json({
-            message: 'Something broken in the server!'
+      console.log('outside jwt.sign() callback')
+   } catch (error) {
+      console.log(error)
+      if (fs.existsSync(`./images/seller/${req.file.filename}`)) {
+         fs.promises.unlink(`./images/seller/${req.file.filename}`).then(val => {
+            console.log('fs.promises.unlink ', val);
          })
       }
-   }, 1500)
+      return res.status(500).json({
+         message: 'Something broken in the server!'
+      })
+   }
 });
 router.post('/login', sellerUpload.single('image'), async (req, res) => {
    setTimeout(async () => {

@@ -260,6 +260,37 @@ router.post('/cart/buy', delayMiddleware(300), verifyTokenMiddleware('user'), as
    //    }
    // });
 });
+router.patch('/profile/edit', delayMiddleware(300), verifyTokenMiddleware('user'), userUpload.single('image'), async(req, res) => {
+   console.log('req.body', req.body);
+
+
+   try {
+      let user = await User.findByPk(req.token.id);
+      if(req.file) {
+         console.log('hapus foto sebelumnya')
+         // delete existings photo
+         if (fs.existsSync(`./images/user/${user.image}`)) {
+            fs.promises.unlink(`./images/user/${user.image}`).then(val => {
+               console.log('fs.promises.unlink ', val);
+            })
+         }
+         await User.update({image: req.file.filename}, {where: {id: req.token.id}})
+      }
+      await User.update({
+         name: req.body.name,
+         username: req.body.username,
+         email: req.body.email,
+      }, {where: {id: req.token.id}})
+      if (req.body.password) {
+         await User.update({password: req.body.password}, {where: {id: req.token.id}})
+      }
+      user = await User.findByPk(req.token.id);
+      return res.json(user);
+   } catch (error) {
+      console.log('user profile edit error', error)
+      return res.status(500).json(error);
+   }
+});
 
 
 export default router;
