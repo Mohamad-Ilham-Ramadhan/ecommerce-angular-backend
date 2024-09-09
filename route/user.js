@@ -52,6 +52,8 @@ router.post('/create', delayMiddleware(1000), userUpload.single('image'), async 
          }, {transaction: t});
          await newUser.createCart({},{transaction: t});
          const token = jwt.sign({id: newUser.id, role: 'user'}, secret);
+
+         throw Error('uups salah');
          return res.json({user: newUser, token});
       } catch (error) {
          console.log('error', error);
@@ -285,6 +287,9 @@ router.patch('/profile/edit', delayMiddleware(300), verifyTokenMiddleware('user'
          await User.update({password: req.body.password}, {where: {id: req.token.id}})
       }
       user = await User.findByPk(req.token.id);
+
+      
+      
       return res.json(user);
    } catch (error) {
       console.log('user profile edit error', error)

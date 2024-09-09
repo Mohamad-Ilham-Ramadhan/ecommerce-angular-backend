@@ -7,6 +7,7 @@ import { Product } from '../database/models/product.js';
 import { getAuthToken } from '../utils/getAuthToken.js';
 import { delayMiddleware } from '../middlewares/delayMiddleware.js';
 import { verifyTokenMiddleware } from '../middlewares/verifyTokenMiddleware.js';
+import { db } from '../database/init.js';
 
 // relations
 Seller.hasMany(Product);
@@ -54,7 +55,7 @@ router.get('/', verifyTokenMiddleware('admin'), async (req, res) => {
       }
    }, 1000)
 });
-router.post('/create', delayMiddleware(300), sellerUpload.single('image'), async (req, res) => {
+router.post('/create', delayMiddleware(300), verifyTokenMiddleware('seller'), sellerUpload.single('image'), async (req, res) => {
    console.log('request', req.body)
    console.log('req.file', req.file);
 
@@ -66,24 +67,11 @@ router.post('/create', delayMiddleware(300), sellerUpload.single('image'), async
          image: req.file?.filename
       });
 
-      throw Error('masasih kisi motoh');
-      
-      let jwtError = null;
-      let token = null;
-      jwt.sign({id: newSeller.id, role: 'seller'}, secret, function(err, encoded) {
-         jwtError = err;
-         token = encoded;
-         if (jwtError) return res.status(401).json(jwtError);
-         
-         console.log('inside jwt.sign() callback just right before return res.json()');
-         return res.json({
-            message: 'Create new seller, success!',
-            seller: newSeller,
-            token,
-         })
-      });
-
-      console.log('outside jwt.sign() callback')
+      return res.json({
+         message: 'Create new seller, success!',
+         seller: newSeller,
+         token: req.token,
+      })
    } catch (error) {
       console.log(error)
       if (fs.existsSync(`./images/seller/${req.file.filename}`)) {
@@ -137,24 +125,10 @@ router.get('/find-one', delayMiddleware(1), verifyTokenMiddleware(secret), async
       return res.status(500).json({message: 'Something wrong on the server.'})
    }
 });
-router.patch('/edit', sellerUpload.single('image'), async (req, res) => {
-   let jwtError = false;
-   let token = undefined;
-   // token verify
-   jwt.verify(getAuthToken(req.headers.authorization), secret, function(error, decoded) {
-      jwtError = error; 
-      token = decoded; 
-   });
-
-   if (jwtError) {
-      return res.status(401).json(jwtError)
-   };
-
+router.patch('/edit', delayMiddleware(300), verifyTokenMiddleware('seller'), sellerUpload.single('image'), async (req, res) => {
    try {
-      const seller = await Seller.findByPk(token.id);
+      let seller = await Seller.findByPk(req.token.id);
       
-      // console.log('seller edit', seller);
-   
       if (req.file) {
          // delete existings photo
          if (fs.existsSync(`./images/seller/${seller.image}`)) {
@@ -162,15 +136,15 @@ router.patch('/edit', sellerUpload.single('image'), async (req, res) => {
                console.log('fs.promises.unlink ', val);
             })
          }
-         await Seller.update({image: req.file.filename}, {where: {id: token.id}})
+         await Seller.update({image: req.file.filename}, {where: {id: req.token.id}})
       }
        
       await Seller.update({
          name: req.body.name,
          email: req.body.email,
-      }, {where: {id: token.id}})
+      }, {where: {id: req.token.id}})
       
-      console.log('outside fs.unlink')
+      seller = await Seller.findByPk(req.token.id);
       return res.json({seller, message: 'testing'});
    } catch (error) {
       return res.status(500).json({message: 'Something wrong on the server!'});
@@ -235,24 +209,30 @@ router.post('/create-product', delayMiddleware(1000), verifyTokenMiddleware(secr
       return res.status(401).json(req.jwtError)
    };
 
-   try {
-
-      console.log('req.file', req.file);
-      console.log('req.file', req.file);
-      
-      const seller = await Seller.findByPk(req.token.id);
-      await seller.createProduct({
-         name: req.body.name,
-         description: req.body.description,
-         stock: req.body.stock,
-         price: req.body.price,
-         image: req.file.filename,
-      });
-      console.log('seller.getProducts()', await seller.countProducts())
-      return res.json({message: 'Create product success!'})
-   } catch (error) {
-      return res.json(error)
-   }
+   await db.transaction( async t => {
+      try {
+   
+         console.log('req.file', req.file);
+         
+         const seller = await Seller.findByPk(req.token.id);
+         await seller.createProduct({
+            name: req.body.name,
+            description: req.body.description,
+            stock: req.body.stock,
+            price: req.body.price,
+            image: req.file.filename,
+         }, {transaction: t});
+         return res.json({message: 'Create product success!'})
+      } catch (error) {
+         console.log('error', error)
+         if (fs.existsSync(`./images/product/${req.file.filename}`)) {
+            fs.promises.unlink(`./images/product/${req.file.filename}`).then(val => {
+               console.log('fs.promises.unlink ', val);
+            })
+         }
+         return res.status(500).json(error)
+      }
+   })
 
    // relationship save 
 });
