@@ -199,16 +199,7 @@ router.get('/get-all-products', verifyTokenMiddleware(secret), async (req, res) 
       return res.json(error);
    }
 });
-router.post('/create-product', delayMiddleware(1000), verifyTokenMiddleware(secret, true), productUpload.single('image'), async (req, res) => {
-   if (req.jwtError) {
-      if (fs.existsSync(`./images/product/${req.file.filename}`)) {
-         fs.promises.unlink(`./images/product/${req.file.filename}`).then(val => {
-            console.log('fs.promises.unlink ', val);
-         })
-      }
-      return res.status(401).json(req.jwtError)
-   };
-
+router.post('/create-product', delayMiddleware(1000), verifyTokenMiddleware(secret), productUpload.single('image'), async (req, res) => {
    await db.transaction( async t => {
       try {
    
@@ -236,16 +227,7 @@ router.post('/create-product', delayMiddleware(1000), verifyTokenMiddleware(secr
 
    // relationship save 
 });
-router.patch('/edit-product', delayMiddleware(1000), verifyTokenMiddleware(secret, true), productUpload.single('image'), async (req, res) => {
- 
-   if (req.jwtError) {
-      if (req.file && fs.existsSync(`./images/product/${req.file.filename}`)) {
-         fs.promises.unlink(`./images/product/${req.file.filename}`).then(val => {
-            console.log('fs.promises.unlink ', val);
-         })
-      }
-      return res.status(401).json(req.jwtError)
-   };
+router.patch('/edit-product', delayMiddleware(1000), verifyTokenMiddleware(secret), productUpload.single('image'), async (req, res) => {
 
    try {
 
@@ -284,7 +266,7 @@ router.get('/products', verifyTokenMiddleware(secret), async (req, res) => {
       return res.status(500).json(error)
    }
 });
-router.delete('/delete-product',delayMiddleware(1000), verifyTokenMiddleware(secret), async (req, res) => {
+router.delete('/delete-product', delayMiddleware(300), verifyTokenMiddleware(secret), async (req, res) => {
    try {
       const seller = await Seller.findByPk(req.token.id);
       const product = await Product.findByPk(req.body.productId);
@@ -292,11 +274,18 @@ router.delete('/delete-product',delayMiddleware(1000), verifyTokenMiddleware(sec
          console.log('seller has product!')
          await product.destroy()
          const products = await seller.getProducts()
+         console.log('/sellers/delete-product/', product.image)
+         if (fs.existsSync(`./images/product/${product.image}`)) {
+            fs.promises.unlink(`./images/product/${product.image}`).then(val => {
+               console.log('fs.promises.unlink ', val);
+            })
+         }
          return res.json({
             message: 'Delete product success!',
             products,
          })
       }
+      
       return res.status(500).json({
          message: "Seller doesn't has the product"
       })
