@@ -55,7 +55,7 @@ router.get('/', verifyTokenMiddleware('admin'), async (req, res) => {
       }
    }, 1000)
 });
-router.post('/create', delayMiddleware(300), verifyTokenMiddleware('seller'), sellerUpload.single('image'), async (req, res) => {
+router.post('/create', delayMiddleware(300), sellerUpload.single('image'), async (req, res) => {
    console.log('request', req.body)
    console.log('req.file', req.file);
 
@@ -67,10 +67,12 @@ router.post('/create', delayMiddleware(300), verifyTokenMiddleware('seller'), se
          image: req.file?.filename
       });
 
+      const token = jwt.sign({id: newSeller.id, role: 'seller'}, secret)
+      
       return res.json({
          message: 'Create new seller, success!',
          seller: newSeller,
-         token: req.token,
+         token: token,
       })
    } catch (error) {
       console.log(error)
@@ -80,6 +82,7 @@ router.post('/create', delayMiddleware(300), verifyTokenMiddleware('seller'), se
          })
       }
       return res.status(500).json({
+         error,
          message: 'Something broken in the server!'
       })
    }

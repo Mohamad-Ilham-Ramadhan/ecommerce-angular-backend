@@ -53,7 +53,7 @@ router.post('/create', delayMiddleware(1000), userUpload.single('image'), async 
          await newUser.createCart({},{transaction: t});
          const token = jwt.sign({id: newUser.id, role: 'user'}, secret);
 
-         throw Error('uups salah');
+         // throw Error('uups salah');
          return res.json({user: newUser, token});
       } catch (error) {
          console.log('error', error);
